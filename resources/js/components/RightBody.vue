@@ -17,7 +17,12 @@
         <div class="tasks">
             <div class="add-tasks">
                 <h2>Today's Task</h2>
-                <div class="add-action"><img src="/images/add.png" /></div>
+                <div class="add-action">
+                    <img
+                        src="/images/add.png"
+                        @click="() => (showAddTodayTask = !showAddTodayTask)"
+                    />
+                </div>
             </div>
 
             <ul class="tasks-list">
@@ -28,7 +33,7 @@
                                 <input
                                     type="checkbox"
                                     name="test"
-                                    :checked="task.completed"
+                                    :checked="task.completed == 1"
                                     @change="updateTodayTask(task.taskId)"
                                 />
                                 <span></span>
@@ -60,11 +65,15 @@
         <div class="upcoming">
             <div class="add-tasks">
                 <h2>Upcoming</h2>
-                <div class="add-action">
+                <div
+                    class="add-action"
+                    @click="() => (showAddUpcomingTask = !showAddUpcomingTask)"
+                >
                     <img src="/images/add.png" alt="" />
                 </div>
             </div>
             <form
+                v-show="showAddUpcomingTask"
                 id="upcoming-task-form"
                 action=""
                 @submit.prevent="addUpcomingTask"
@@ -76,12 +85,10 @@
                 <li v-for="task in upcomingTasks" :key="task.id">
                     <div class="info">
                         <div class="left">
-                            <label for="" class="myCheckbox">
+                            <label :title="task.completed" class="myCheckbox">
                                 <input
                                     type="checkbox"
-                                    name="test"
-                                    id=""
-                                    :checked="task.completed"
+                                    :checked="task.completed === '1'"
                                     @change="checkUpcoming(task.taskId)"
                                 />
                                 <span></span>
@@ -111,6 +118,8 @@ export default {
             todayTasks: [],
             upcomingTasks: [],
             newTask: "",
+            showAddTodayTask: false,
+            showAddUpcomingTask: false,
             err: {
                 error: false,
                 id: "",
@@ -140,8 +149,7 @@ export default {
             this.todayTasks = data;
         },
         checkUpcoming(id) {
-            console.log("d");
-            if (this.todayTasks.length > 10) {
+            if (this.todayTasks.length > 4) {
                 this.err = {
                     error: true,
                     id: "daily-task-length",
@@ -149,7 +157,7 @@ export default {
                 };
                 return;
             }
-            return this.addTodayTask(id);
+            return this.addDailyTask(id);
         },
         async delUpcoming(id) {
             const res = await fetch("/api/upcoming/" + id, {
@@ -193,12 +201,22 @@ export default {
             this.upcomingTasks = [...this.upcomingTasks, data];
         },
         async addDailyTask(id) {
-            console.log(this.todayTasks.find((task) => task.taskId === id));
-            return;
+            if (
+                this.todayTasks.find((task) => task.taskId === id) !== undefined
+            ) {
+                this.err = {
+                    error: true,
+                    id: "task-not-found",
+                    message: "Task is already in daily.",
+                };
+                this.delUpcoming(id);
+                return;
+            }
+
             const newTask = await fetch("/api/upcoming/" + id);
             const data = await newTask.json();
             if (data.error === true) {
-                his.err = {
+                this.err = {
                     error: true,
                     id: "task-not-found",
                     message: data.message,
@@ -214,6 +232,10 @@ export default {
             });
             const dataDailyTask = await res.json();
             this.todayTasks = [...this.todayTasks, dataDailyTask];
+            this.delUpcoming(id);
+            this.upcomingTasks = this.upcomingTasks.filter(
+                (task) => task.id !== id
+            );
         },
     },
 };

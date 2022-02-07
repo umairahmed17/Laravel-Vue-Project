@@ -5545,12 +5545,21 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
   data: function data() {
     return {
       todayTasks: [],
       upcomingTasks: [],
       newTask: "",
+      showAddTodayTask: false,
+      showAddUpcomingTask: false,
       err: {
         error: false,
         id: "",
@@ -5628,9 +5637,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
       }))();
     },
     checkUpcoming: function checkUpcoming(id) {
-      console.log("d");
-
-      if (this.todayTasks.length > 10) {
+      if (this.todayTasks.length > 4) {
         this.err = {
           error: true,
           id: "daily-task-length",
@@ -5639,7 +5646,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
         return;
       }
 
-      return this.addTodayTask(id);
+      return this.addDailyTask(id);
     },
     delUpcoming: function delUpcoming(id) {
       var _this3 = this;
@@ -5746,28 +5753,44 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
           while (1) {
             switch (_context5.prev = _context5.next) {
               case 0:
-                console.log(_this5.todayTasks.find(function (task) {
+                if (!(_this5.todayTasks.find(function (task) {
                   return task.taskId === id;
-                }));
+                }) !== undefined)) {
+                  _context5.next = 4;
+                  break;
+                }
+
+                _this5.err = {
+                  error: true,
+                  id: "task-not-found",
+                  message: "Task is already in daily."
+                };
+
+                _this5.delUpcoming(id);
+
                 return _context5.abrupt("return");
 
               case 4:
+                _context5.next = 6;
+                return fetch("/api/upcoming/" + id);
+
+              case 6:
                 newTask = _context5.sent;
-                _context5.next = 7;
+                _context5.next = 9;
                 return newTask.json();
 
-              case 7:
+              case 9:
                 data = _context5.sent;
 
                 if (data.error === true) {
-                  his.err = {
+                  _this5.err = {
                     error: true,
                     id: "task-not-found",
                     message: data.message
                   };
                 }
 
-                _context5.next = 11;
+                _context5.next = 13;
                 return fetch("/api/dailytask", {
                   method: "POST",
                   headers: {
@@ -5777,16 +5800,22 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                   body: JSON.stringify(data)
                 });
 
-              case 11:
+              case 13:
                 res = _context5.sent;
-                _context5.next = 14;
+                _context5.next = 16;
                 return res.json();
 
-              case 14:
+              case 16:
                 dataDailyTask = _context5.sent;
                 _this5.todayTasks = [].concat(_toConsumableArray(_this5.todayTasks), [dataDailyTask]);
 
-              case 16:
+                _this5.delUpcoming(id);
+
+                _this5.upcomingTasks = _this5.upcomingTasks.filter(function (task) {
+                  return task.id !== id;
+                });
+
+              case 20:
               case "end":
                 return _context5.stop();
             }
@@ -30019,7 +30048,20 @@ var render = function () {
     _vm._m(1),
     _vm._v(" "),
     _c("div", { staticClass: "tasks" }, [
-      _vm._m(2),
+      _c("div", { staticClass: "add-tasks" }, [
+        _c("h2", [_vm._v("Today's Task")]),
+        _vm._v(" "),
+        _c("div", { staticClass: "add-action" }, [
+          _c("img", {
+            attrs: { src: "/images/add.png" },
+            on: {
+              click: function () {
+                return (_vm.showAddTodayTask = !_vm.showAddTodayTask)
+              },
+            },
+          }),
+        ]),
+      ]),
       _vm._v(" "),
       _c(
         "ul",
@@ -30031,7 +30073,7 @@ var render = function () {
                 _c("label", { staticClass: "myCheckbox" }, [
                   _c("input", {
                     attrs: { type: "checkbox", name: "test" },
-                    domProps: { checked: task.completed },
+                    domProps: { checked: task.completed == 1 },
                     on: {
                       change: function ($event) {
                         return _vm.updateTodayTask(task.taskId)
@@ -30082,11 +30124,34 @@ var render = function () {
     ]),
     _vm._v(" "),
     _c("div", { staticClass: "upcoming" }, [
-      _vm._m(3),
+      _c("div", { staticClass: "add-tasks" }, [
+        _c("h2", [_vm._v("Upcoming")]),
+        _vm._v(" "),
+        _c(
+          "div",
+          {
+            staticClass: "add-action",
+            on: {
+              click: function () {
+                return (_vm.showAddUpcomingTask = !_vm.showAddUpcomingTask)
+              },
+            },
+          },
+          [_c("img", { attrs: { src: "/images/add.png", alt: "" } })]
+        ),
+      ]),
       _vm._v(" "),
       _c(
         "form",
         {
+          directives: [
+            {
+              name: "show",
+              rawName: "v-show",
+              value: _vm.showAddUpcomingTask,
+              expression: "showAddUpcomingTask",
+            },
+          ],
           attrs: { id: "upcoming-task-form", action: "" },
           on: {
             submit: function ($event) {
@@ -30126,19 +30191,26 @@ var render = function () {
           return _c("li", { key: task.id }, [
             _c("div", { staticClass: "info" }, [
               _c("div", { staticClass: "left" }, [
-                _c("label", { staticClass: "myCheckbox", attrs: { for: "" } }, [
-                  _c("input", {
-                    attrs: { type: "checkbox", name: "test", id: "" },
-                    domProps: { checked: task.completed },
-                    on: {
-                      change: function ($event) {
-                        return _vm.checkUpcoming(task.taskId)
+                _c(
+                  "label",
+                  {
+                    staticClass: "myCheckbox",
+                    attrs: { title: task.completed },
+                  },
+                  [
+                    _c("input", {
+                      attrs: { type: "checkbox" },
+                      domProps: { checked: task.completed === "1" },
+                      on: {
+                        change: function ($event) {
+                          return _vm.checkUpcoming(task.taskId)
+                        },
                       },
-                    },
-                  }),
-                  _vm._v(" "),
-                  _c("span"),
-                ]),
+                    }),
+                    _vm._v(" "),
+                    _c("span"),
+                  ]
+                ),
                 _vm._v(" "),
                 _c("h4", [_vm._v(_vm._s(task.title))]),
               ]),
@@ -30180,30 +30252,6 @@ var staticRenderFns = [
     var _c = _vm._self._c || _h
     return _c("div", { staticClass: "users-icon" }, [
       _c("img", { attrs: { src: "/images/users.png" } }),
-    ])
-  },
-  function () {
-    var _vm = this
-    var _h = _vm.$createElement
-    var _c = _vm._self._c || _h
-    return _c("div", { staticClass: "add-tasks" }, [
-      _c("h2", [_vm._v("Today's Task")]),
-      _vm._v(" "),
-      _c("div", { staticClass: "add-action" }, [
-        _c("img", { attrs: { src: "/images/add.png" } }),
-      ]),
-    ])
-  },
-  function () {
-    var _vm = this
-    var _h = _vm.$createElement
-    var _c = _vm._self._c || _h
-    return _c("div", { staticClass: "add-tasks" }, [
-      _c("h2", [_vm._v("Upcoming")]),
-      _vm._v(" "),
-      _c("div", { staticClass: "add-action" }, [
-        _c("img", { attrs: { src: "/images/add.png", alt: "" } }),
-      ]),
     ])
   },
 ]

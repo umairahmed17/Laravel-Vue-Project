@@ -242,7 +242,9 @@ body {
                 padding-top: 0.4em; }
                 .mcontainer #body #right .tasks ul.tasks-list li .info .left label input,
                 .mcontainer #body #right .upcoming ul.tasks-list li .info .left label input {
-                  display: none; }
+                  visibility: hidden;
+                  width: 0;
+                  height: 0; }
                 .mcontainer #body #right .tasks ul.tasks-list li .info .left label span,
                 .mcontainer #body #right .upcoming ul.tasks-list li .info .left label span {
                   height: 20px;
